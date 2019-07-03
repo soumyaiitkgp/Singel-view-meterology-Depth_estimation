@@ -8,9 +8,9 @@ This is the final script of height estimation along with GUI
 import cv2
 import math as mt 
 
-P_y = 704
+P_y = 720
 P_x = 1280
-cap = cv2.VideoCapture('vehicle1.mp4')
+cap = cv2.VideoCapture('vehicle1.mp4') 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
 global iter
 boxes = []
@@ -25,7 +25,7 @@ def nothing(x):
 def on_mouse(event, x, y, flags, params):
     global sbox
     if event == cv2.EVENT_LBUTTONDOWN:
-        print ('Start Mouse Position: '+str(x)+', '+str(y))
+        print ('\nStart Mouse Position: '+str(x)+', '+str(y))
         sbox = [x, y]
         u = sbox[0]
         v = P_y - sbox[1]
@@ -48,7 +48,7 @@ def on_mouse(event, x, y, flags, params):
             X = (2*u-(P_x))*((JK)/P_x)
             print('\nThe coordinates of the starting points are:',X,Y_1)
             m = [X,Y_1]
-        
+            
         else:
             Y2 = (-b - mt.sqrt(b*b-4*a*c))/(2*a)
             D2 = (-Y2*mt.tan(theta) + H)/(mt.cos(theta))
@@ -61,11 +61,11 @@ def on_mouse(event, x, y, flags, params):
             
         if theta == 0:
             head_Z(m[0], m[1], H, phi, delta, P_y, P_x, h)
-            cv2.line(img,(sbox[0], sbox[1]),(int(head_z[0]//1),P_y - int(head_z[1]//1)),(0,0,0),5)
+            cv2.line(img,(sbox[0], sbox[1]),(int(head_z[0]//1),P_y - int(head_z[1]//1)),(0,0,0),3)
             print('\nThe coordinates of the head points are:',int(head_z[0]//1),P_y - int(head_z[1]//1), 'this is jkbkhb')
         else:
             head_NZ(m[0],m[1],H,theta,phi,delta,P_y,P_x, h)
-            cv2.line(img,(sbox[0], sbox[1]),(int(head_nz[0]//1),P_y - int(head_nz[1]//1)),(0,255,0),5)
+            cv2.line(img,(sbox[0], sbox[1]),(int(head_nz[0]//1),P_y - int(head_nz[1]//1)),(0,255,0),3)
             print('\nThe value of the head points are:',int(head_nz[0]//1),P_y - int(head_nz[1]//1))
         cv2.imshow('real image', img)
         cv2.waitKey(0)
@@ -98,12 +98,11 @@ def head_Z(X,Y,H,phi,delta,P_y,P_x, h):
     v_head = ((P_y*(mt.sqrt((Y*mt.tan(phi)-H)**2))/(2*Y*mt.tan(phi))))
     head_z = [u_head, v_head]
 
-
 #==============================================================================
 #function2
 #==============================================================================
 
-def on_mouse1(event, x, y, flags, params):
+def on_mouse1(event, x, y, flags, params):          #function for measuring height/depth by cursor
     
     global iter
     global sbox
@@ -183,16 +182,19 @@ def on_mouse1(event, x, y, flags, params):
             JK = mt.sqrt(Y2*Y2*(1+mt.tan(theta)*mt.tan(theta)))*(mt.tan(delta))
             X = (((2*U-P_x)*JK)/P_x)
             Y = Y_2
-            print('\nThe value of the points are(for head): %d, %d\n',X,Y_2)
+            print('\nThe value of the points are(for head): ',X,Y_2)
             hbox = [X,Y] 
             iter = 1
         
         h = H*(hbox[1]-bbox[1])/(hbox[1])
-        print('The height of the object is:', h)
+        print("The height of the object is:", h)
+        cv2.line(img,(int(sbox[0]),int(sbox[1])),(int(ebox[0]),int(ebox[1])),(255,0,0),1)
+        cv2.imshow('real image', img)
         h = str(h)
+        hbox = str(hbox)
         app = QApplication([])
         win = QMainWindow()
-        button = QPushButton(h)
+        button = QPushButton('Height of the object: ' + h+ ' m' + '\nWorld coordinates of the object: ' + hbox + ' m')
         win.setCentralWidget(button)
         win.show()
         app.exit(app.exec_())
@@ -201,7 +203,7 @@ def on_mouse1(event, x, y, flags, params):
         #function3
 #==============================================================================
         
-def base_NZ(X, Y, H, theta, phi, delta, P_y, P_x):   #function for projection of lines on the virtual plane
+def base_NZ(X, Y, H, theta, phi, delta, P_y, P_x):   #function for projection of lines on the virtual plane or grids
     global base_nz
     x = ((H+Y*(1/mt.tan(theta)))/(mt.tan(theta+phi)+(1/mt.tan(theta))))
     y = ((-(H+Y*(1/mt.tan(theta))*(mt.tan(theta+phi))))/(mt.tan(theta+phi)+(1/mt.tan(theta))))+H
@@ -217,10 +219,6 @@ def base_NZ(X, Y, H, theta, phi, delta, P_y, P_x):   #function for projection of
 
 def base_Z(X,Y,H,phi,delta,P_y,P_x):
     global base_z
-    print(delta)
-    print(mt.tan(delta))
-    print('X', X)
-    print('Y',Y)
     u_base = (P_x/2) + ((X*P_x)/(2*Y*mt.tan(delta)))
     v_base = P_y - ((P_y*(mt.sqrt((Y*mt.tan(phi)-H)**2))/(2*Y*mt.tan(phi))))
     base_z = [u_base, v_base]
@@ -232,6 +230,7 @@ def base_Z(X,Y,H,phi,delta,P_y,P_x):
 
 while(1):
     ret, img = cap.read()
+    #img = cv2.imread('tt3.jpg')
     img = cv2.resize(img,(int(P_x),int(P_y)))
     cv2.imshow('To capture press q',img)
     cv2.waitKey(1)
@@ -243,17 +242,19 @@ while(1):
 iter = 0
 cv2.namedWindow('image')
 cv2.resizeWindow('image', 1576,144) 
-cv2.createTrackbar('Height','image',1,5000,nothing)
-cv2.createTrackbar('theta','image',0,900,nothing)
+cv2.createTrackbar('Height(cm)','image',1,5000,nothing) #edit 5000 for sdjusting height limit
+cv2.createTrackbar('theta','image',0,900,nothing) 
 cv2.createTrackbar('phi','image',1,900,nothing)
-cv2.createTrackbar('h','image',1,2000,nothing)
+cv2.createTrackbar('h(cm)','image',1,2000,nothing)
 cv2.createTrackbar('Confirm','image',0,1,nothing)
 cv2.createTrackbar('Measure distance','image',0,1,nothing)
 cv2.createTrackbar('Grid','image',0,1,nothing)
-cv2.setTrackbarPos('Height', 'image', 100)
+cv2.createTrackbar('Grid density','image',0,50,nothing)
+cv2.setTrackbarPos('Height(cm)', 'image', 100)
 cv2.setTrackbarPos('theta', 'image', 50)
 cv2.setTrackbarPos('phi', 'image', 200)
-cv2.setTrackbarPos('h', 'image', 200)
+cv2.setTrackbarPos('h(cm)', 'image', 200)
+cv2.setTrackbarPos('Grid density', 'image', 5)
 
 H = 1
 theta = 0.1
@@ -268,27 +269,32 @@ while(1):
 
     while(1):
         
-        H = cv2.getTrackbarPos('Height','image')
+        H = cv2.getTrackbarPos('Height(cm)','image')
         H = H/100
         theta = cv2.getTrackbarPos('theta','image')
         theta = (theta*mt.pi)/1800
         phi = cv2.getTrackbarPos('phi','image')
         if phi == 0:
             phi = 1
+            cv2.setTrackbarPos('phi', 'image', 1)
         phi = (phi*mt.pi)/1800
-        h = cv2.getTrackbarPos('h','image')
+        h = cv2.getTrackbarPos('h(cm)','image')
         h = h/100
         s = cv2.getTrackbarPos('Confirm','image')
+        gd = cv2.getTrackbarPos('Grid density','image')
+        if gd == 0:
+            gd = 1
+            cv2.setTrackbarPos('Grid density', 'image', 1)
         delta = mt.atan((P_x/P_y)*mt.tan(phi))
         #img = cv2.imread('img_.png',0) # for image read
         img = cv2.imread('test.png')
         img = cv2.resize(img,(int(P_x),int(P_y)))
         
-        #---------------------------for grid making----------------------------
+#-----------------------------------for grid making----------------------------
         g = cv2.getTrackbarPos('Grid','image')
         if g == 1:
-            for X in range(-50,51,5):
-                for Y in range(1,250,5):
+            for X in range(-50,51,gd): #adjust this value for densing or sparsing of grids, default distance is 5 m
+                for Y in range(25,250,gd): 
                     if theta == 0: # for lines along x-axis
                         #print('This is delta:',delta)
                         p = base_Z(-50,Y,H,phi,delta,P_y,P_x)
@@ -312,8 +318,8 @@ while(1):
                         q = base_NZ(X,500,H,theta,phi,delta,P_y,P_x)
                         cv2.line(img,(int(p[0]),P_y - int(p[1])),(int(q[0]), int(q[1])),(255,0,0),1)
             
-            for X in range(-50,51,5):
-                for Y in range(250,500,15):
+            for X in range(-50,51,gd):
+                for Y in range(250,500,3*gd):
                     if theta == 0: # for lines along x-axis
                         #print('This is delta:',delta)
                         p = base_Z(-50,Y,H,phi,delta,P_y,P_x)
@@ -337,8 +343,7 @@ while(1):
                         q = base_NZ(X,500,H,theta,phi,delta,P_y,P_x)
                         cv2.line(img,(int(p[0]),P_y - int(p[1])),(int(q[0]), int(q[1])),(0,255,0),1)
 
-        
-                    
+                            
         #----------------------------------end--------------------------------- 
         
         cv2.namedWindow('real image')
@@ -370,8 +375,6 @@ if  s == 1:
             img = cv2.resize(img,(int(P_x),int(P_y)))
             cv2.namedWindow('real image')
             cv2.setMouseCallback('real image', on_mouse1, 0)
-            cv2.line(img,(int(sbox[0]),int(sbox[1])),(int(ebox[0]),int(ebox[1])),(255,0,0),1)
-            cv2.imshow('real image', img)
             
             if count < 50:
                 if cv2.waitKey(33) == 27:
