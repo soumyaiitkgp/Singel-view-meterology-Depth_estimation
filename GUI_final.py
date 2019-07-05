@@ -10,7 +10,7 @@ import math as mt
 
 P_y = 720
 P_x = 1280
-cap = cv2.VideoCapture('vehicle1.mp4') #'rtsp://admin:admin123@192.168.0.59:554/Streaming/Channels/101')
+cap = cv2.VideoCapture('vehicle1.mp4')
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
 global iter
 boxes = []
