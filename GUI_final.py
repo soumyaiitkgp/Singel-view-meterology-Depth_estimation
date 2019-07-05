@@ -10,7 +10,7 @@ import math as mt
 
 P_y = 720
 P_x = 1280
-cap = cv2.VideoCapture('vehicle1.mp4') 
+cap = cv2.VideoCapture('vehicle1.mp4') #'rtsp://admin:admin123@192.168.0.59:554/Streaming/Channels/101')
 from PyQt5.QtWidgets import QApplication, QMainWindow, QPushButton
 global iter
 boxes = []
@@ -25,11 +25,11 @@ def nothing(x):
 def on_mouse(event, x, y, flags, params):
     global sbox
     if event == cv2.EVENT_LBUTTONDOWN:
-        print ('\nStart Mouse Position: '+str(x)+', '+str(y))
+        print ('\nStart Mouse Position(OpenCV): '+str(x)+', '+str(y))
         sbox = [x, y]
         u = sbox[0]
         v = P_y - sbox[1]
-        print(u,v)
+        print('Foot point(Model):',u,v)
         
         if v <= P_y/2:   
             l = (1-(2*v/P_y))
@@ -46,7 +46,7 @@ def on_mouse(event, x, y, flags, params):
             Y_1 = Y1 - D1*mt.sin(theta)
             JK = mt.sqrt(Y1*Y1*(1+mt.tan(theta)*mt.tan(theta)))*(mt.tan(delta))
             X = (2*u-(P_x))*((JK)/P_x)
-            print('\nThe coordinates of the starting points are:',X,Y_1)
+            print('\nThe world coordinates of the starting points are:','(',X,Y_1,')','m')
             m = [X,Y_1]
             
         else:
@@ -56,17 +56,24 @@ def on_mouse(event, x, y, flags, params):
             JK = mt.sqrt(Y2*Y2*(1+mt.tan(theta)*mt.tan(theta)))*(mt.tan(delta))
             X = (((2*u-P_x)*JK)/P_x)
             Y = Y_2
-            print('\nThe coordinates of the points are:',X,Y_2)
+            print('\nThe world coordinates of the points are:','(',X,Y_2,')','m')
             m = [X,Y]
             
         if theta == 0:
             head_Z(m[0], m[1], H, phi, delta, P_y, P_x, h)
             cv2.line(img,(sbox[0], sbox[1]),(int(head_z[0]//1),P_y - int(head_z[1]//1)),(0,0,0),3)
-            print('\nThe coordinates of the head points are:',int(head_z[0]//1),P_y - int(head_z[1]//1), 'this is jkbkhb')
+            print('The height of the object is:', h)
+            print('\nThe coordinates of the head points are(OpenCV):',int(head_z[0]//1),P_y - int(head_z[1]//1))
+            print('Head point(Model): ',int(head_z[0]//1),int(head_z[1]//1),head_z[1])
+            print('==========================================================')
+
         else:
             head_NZ(m[0],m[1],H,theta,phi,delta,P_y,P_x, h)
             cv2.line(img,(sbox[0], sbox[1]),(int(head_nz[0]//1),P_y - int(head_nz[1]//1)),(0,255,0),3)
-            print('\nThe value of the head points are:',int(head_nz[0]//1),P_y - int(head_nz[1]//1))
+            print('The height of the object is:', h)
+            print('\nThe coordinates of the head points are(OpenCV):',int(head_nz[0]//1),P_y - int(head_nz[1]//1))
+            print('Head point(Model): ',int(head_nz[0]//1),int(head_nz[1]//1))
+            print('==========================================================')
         cv2.imshow('real image', img)
         cv2.waitKey(0)
         if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -75,6 +82,8 @@ def on_mouse(event, x, y, flags, params):
 def head_NZ(X, Y, H, theta, phi, delta, P_y, P_x, h):   #treat head as a base point of the projection of the head on the plane
     global head_nz
     l = (H/(H-h))
+    if l < 0:
+        l = -l
     Y = l*Y
     X = l*X
     x = ((H+Y*(1/mt.tan(theta)))/(mt.tan(theta+phi)+(1/mt.tan(theta))))
@@ -91,11 +100,15 @@ def head_NZ(X, Y, H, theta, phi, delta, P_y, P_x, h):   #treat head as a base po
 
 def head_Z(X,Y,H,phi,delta,P_y,P_x, h):
     global head_z
+    
     l = (H/(H-h))
     Y = l*Y
     X = l*X
+    if l < 0:
+        l = -l    
+    #v_head = ((P_y*(mt.sqrt((Y*mt.tan(phi)-H)**2))/(2*Y*mt.tan(phi)))) old
     u_head = (P_x/2) + ((X*P_x)/(2*Y*mt.tan(delta)))
-    v_head = ((P_y*(mt.sqrt((Y*mt.tan(phi)-H)**2))/(2*Y*mt.tan(phi))))
+    v_head = P_y*((Y*mt.tan(phi)+(H-h))/(2*Y*mt.tan(phi)))
     head_z = [u_head, v_head]
 
 #==============================================================================
@@ -245,7 +258,7 @@ cv2.resizeWindow('image', 1576,144)
 cv2.createTrackbar('Height(cm)','image',1,5000,nothing) #edit 5000 for sdjusting height limit
 cv2.createTrackbar('theta','image',0,900,nothing) 
 cv2.createTrackbar('phi','image',1,900,nothing)
-cv2.createTrackbar('h(cm)','image',1,2000,nothing)
+cv2.createTrackbar('h(cm)','image',1,4000,nothing)
 cv2.createTrackbar('Confirm','image',0,1,nothing)
 cv2.createTrackbar('Measure distance','image',0,1,nothing)
 cv2.createTrackbar('Grid','image',0,1,nothing)
